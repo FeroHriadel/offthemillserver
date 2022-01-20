@@ -34,10 +34,15 @@ exports.getProductReviews = async (req, res, next) => {
         const product_id = req.query.product_id;
         if (!product_id) return next(new ErrorResponse('Product ID is required'), 400);       
 
-        const reviews = await db.any('SELECT reviews.*, users.email FROM reviews INNER JOIN users ON users.user_id = reviews.user_id WHERE product_id = $1 ORDER BY reviews.created_at DESC LIMIT 25', [product_id]);
-        if (!reviews || !reviews[0]) return next(new ErrorResponse('No reviews found'), 404);
+        db.task(async t => {
+            const reviews = await t.any('SELECT reviews.*, users.email FROM reviews INNER JOIN users ON users.user_id = reviews.user_id WHERE product_id = $1 ORDER BY reviews.created_at DESC LIMIT 25', [product_id]);
+            if (!reviews || !reviews[0]) return next(new ErrorResponse('No reviews found'), 404);
 
-        res.status(200).json({message: 'Reviews found', reviews});
+            const reviewsStats = await t.one('SELECT COUNT(*) AS reviews_total, AVG(stars) AS average_rating FROM reviews WHERE product_id = $1', product_id);
+            
+
+            res.status(200).json({message: 'Reviews found', reviews, reviews_total: reviewsStats.reviews_total, average_rating: reviewsStats.average_rating});
+        })
         
     } catch (error) {
         next(error);
