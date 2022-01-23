@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireSignin, requireAdmin } = require('../middleware/auth');
-const { createProduct, getProducts, getProductBySlug, updateProduct, deleteProduct, getLatestProducts } = require('../controllers/productControllers');
+const { createProduct, getProducts, getProductBySlug, updateProduct, deleteProduct, getLatestProducts, verifyCart } = require('../controllers/productControllers');
 
 
 
@@ -10,7 +10,8 @@ router.get('/getproducts', getProducts);
 router.get('/getproductbyslug', getProductBySlug);
 router.put('/updateproduct', requireSignin, requireAdmin, updateProduct);
 router.delete('/deleteproduct', requireSignin, requireAdmin, deleteProduct);
-router.get('/getlatestproducts', getLatestProducts)
+router.get('/getlatestproducts', getLatestProducts);
+router.post('/verifycart', verifyCart);
 
 
 

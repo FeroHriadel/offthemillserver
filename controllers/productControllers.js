@@ -209,7 +209,7 @@ exports.getProducts = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-} //this is where I added tagQuery. If it turns out bad, the original `getProducts` is at the bottom of this file
+}
 
 
 
@@ -373,130 +373,29 @@ exports.getLatestProducts = async (req, res, next) => {
 
 
 
-/*
-exports.getProducts = async (req, res, next) => {
+exports.verifyCart = async (req, res, next) => {
     try {
-        //get sql WHERE-clause out of the way:
-        const WHERE = ` WHERE products.product_id >= 0 `; //this does nothing but enables all other queries to start with AND
+        let cart = req.body.cart;
+        if (!cart) return next(new ErrorResponse('Cart not included in request', 400));
+        if (cart.length === 0) return next(new ErrorResponse('Cannot verify empty cart', 400));
 
-        //fileter by category
-        const categoryid = req.query.category;
-        const categoryQuery = req.query.category && req.query.category !== 'null' ? `AND products.category_id = $1` : '';
+        db.task(async t => {
+            for (let i = 0; i < cart.length; i++) {
+                const productPrice = await t.one('SELECT price FROM products WHERE product_id = $1', [cart[i].product_id]);
+                cart[i].price = productPrice;
+            }
+        });
+        
+        const total = cart.reduce((acc, curr) => {
+            acc += curr.price * curr.inCart
+            return acc;
+        }, 0);
 
-        //filter by title
-        const title = req.query.title;
-        const titleQuery = req.query.title && req.query.title !== 'null' ? `AND products.title LIKE $2` : '';
-
-        //filter by description
-        const description = req.query.description;
-        const descriptionQuery = req.query.description && req.query.description !== 'null' ? `AND products.description LIKE $3` : '';
-
-        //filter by maxprice
-        const maxprice = req.query.maxprice;
-        let priceQuery = req.query.maxprice && req.query.maxprice !== 'null' ? `AND products.price <= $4` : '';
-
-        //filter by minquantity
-        const minquantity = req.query.minquantity;
-        const quantityQuery = req.query.minquantity && req.query.minquantity !== 'null' ? `AND products.quantity >= $5` : '';
-
-        //filter by sold
-        const minsold = req.query.minsold;
-        const soldQuery = req.query.minsold && req.query.minsold !== 'null' ? `AND products.sold >= $6` : '';
-
-        //filter by brand
-        const brand = req.query.brand;
-        const brandQuery = req.query.brand && req.query.brand !== 'null' ? `AND products.brand LIKE $7` : '';
-
-        //skip & limit
-        let perpage = Number(req.query.perpage) || 5; if (perpage === 'null') perpage = 5;
-        let skip = Number(req.query.skip) || 0; if (skip === 'null') skip = 0;
-
-        //orderby
-        let orderby = req.query.orderby || 'title'; if (orderby === 'null') orderby = 'title';
-        if (orderby !== 'category_id' && orderby !== 'title' && orderby !== 'price' && orderby !== 'quantity' && orderby !== 'sold' && orderby !== 'brand' && orderby !== 'created_at') return next(new ErrorResponse(`Cannot sort by ${req.query.orderby}`, 400)); //this is here not only to avoid sorting by non-existing columns but mainly to avoid sql-injection. Pg-Promise does not support ORDER BY with $variables and we have to sanitize ORDER BY ourselves.
-        const orderbyQuery = ` ORDER BY products.${orderby}, products.product_id DESC `
-
+        res.status(200).json({message: 'Cart verified', cart, total})
 
         
-        db.task(async t => {
-            //get products
-            const products = await t.any("SELECT products.product_id AS aggregatedby, products.*, ARRAY_AGG(DISTINCT(product_tag_rel.tag_id || '=>' || tags.name)) AS tags, ARRAY_AGG(DISTINCT(product_img_rel.url || '=>' || product_img_rel.public_id)) AS images, categories.name AS category_name FROM products JOIN categories ON categories.category_id = products.category_id LEFT JOIN product_tag_rel ON product_tag_rel.product_id = products.product_id LEFT JOIN tags ON tags.tag_id = product_tag_rel.tag_id LEFT JOIN product_img_rel ON products.product_id = product_img_rel.product_id"
-            +
-            WHERE
-            +
-            categoryQuery 
-            +
-            titleQuery
-            +
-            descriptionQuery
-            +
-            priceQuery
-            +
-            quantityQuery
-            +
-            soldQuery
-            +
-            brandQuery
-            +
-            "GROUP BY products.product_id, categories.name" + orderbyQuery + "LIMIT $8 OFFSET $9",
-            [categoryid, `%${title}%`, `%${description}%`, Number(maxprice) * 100, Number(minquantity), Number(minsold), `%${brand}%`, perpage, skip]);
-
-            if (!products || !products[0]) return next(new ErrorResponse('No products found', 404));
-
-            
-            
-            //format tags like [{tag_id, tag_name}, ...]
-            for (let i = 0; i < products.length; i++) {               
-                for (let j = 0; j < products[i].tags.length; j++) {
-                    if (products[i].tags[j]) {
-                        products[i].tags[j] = {tag_id: products[i].tags[j].split('=>')[0], tag_name: products[i].tags[j].split('=>')[1]}
-                    }
-                }
-            }
-
-
-
-            //format images like [{url, public_id}, ...]
-            for (let i = 0; i < products.length; i++) {
-                for (let j = 0; j < products[i].images.length; j++) {
-                    if (products[i].images[j]) {
-                        products[i].images[j] = {url: products[i].images[j].split('=>')[0], public_id: products[i].images[j].split('=>')[1]}
-                    }
-                }
-            }
-            
-
-
-            //get total of products matching the search criteria
-            const total = await t.one(
-                'SELECT COUNT(*) FROM products'
-                +
-                WHERE
-                +
-                categoryQuery 
-                +
-                titleQuery
-                +
-                descriptionQuery
-                +
-                priceQuery
-                +
-                quantityQuery
-                +
-                soldQuery
-                +
-                brandQuery,
-                [categoryid, `%${title}%`, `%${description}%`, Number(maxprice) * 100, Number(minquantity), Number(minsold), `%${brand}%`]
-            );
-
-            
-
-            //respond with {message, products, perPage, skip, total}
-            res.json({message: 'Products found', products, perPage: Number(perpage), skip: Number(skip), total: Number(total.count)})
-        })
-
+        
     } catch (error) {
         next(error);
     }
 }
-*/
