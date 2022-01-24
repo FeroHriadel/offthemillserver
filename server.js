@@ -12,6 +12,7 @@ const tagRoutes = require('./routes/tagRoutes');
 const productRoutes = require('./routes/productRoutes');
 const imageRoutes = require('./routes/imageRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const stripeRoutes = require('./routes/stripeRoutes');
 
 
 
@@ -64,6 +65,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 
 
