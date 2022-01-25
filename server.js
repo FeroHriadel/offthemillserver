@@ -13,6 +13,7 @@ const productRoutes = require('./routes/productRoutes');
 const imageRoutes = require('./routes/imageRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 
 
 
@@ -66,6 +67,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/orders', orderRoutes);
 
 
 
