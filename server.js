@@ -14,6 +14,7 @@ const imageRoutes = require('./routes/imageRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
 
 
 
@@ -68,6 +69,7 @@ app.use('/api/images', imageRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 
 
