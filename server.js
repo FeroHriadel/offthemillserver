@@ -15,6 +15,10 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const rateLimit = require('express-rate-limit');
+const hpp = require('hpp');
 
 
 
@@ -54,9 +58,23 @@ db.connect()
 
 //APP MIDDLEWARE
 const app = express();
-app.use(cors());
 app.use(express.json({limit: "50mb"}));
 app.use(morgan('dev'));
+
+
+
+//SECURITY MIDDLEWARE
+app.use(cors()); //allow any cross origin
+app.use(helmet()); //no bad headers
+app.use(xss()); //no <tags> in input
+//no billion calls a minute
+const limiter = rateLimit({
+    windowMs: 10 * 60 * 1000, //10 minutes
+    max: 100 //max number of calls
+  });
+app.use(limiter);
+app.use(hpp());
+
 
 
 

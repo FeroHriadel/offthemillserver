@@ -18,12 +18,16 @@
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.2",
+    "express-rate-limit": "^6.2.0",
     "google-auth-library": "^7.11.0",
+    "helmet": "^5.0.2",
+    "hpp": "^0.2.3",
     "jsonwebtoken": "^8.5.1",
     "morgan": "^1.10.0",
     "pg-promise": "^10.11.1",
     "slugify": "^1.6.4",
-    "stripe": "^8.199.0"
+    "stripe": "^8.199.0",
+    "xss-clean": "^0.1.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"
